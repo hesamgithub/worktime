@@ -20,7 +20,7 @@ from worktime.domain.clocking import (
     within_working_hours,
 )
 from worktime.domain.employee import Employee
-from worktime.domain.errors import ConflictError, NotFoundError
+from worktime.domain.errors import ConflictError, NotFoundError, RuleViolationError
 from worktime.domain.reporting import EmployeeReport, Statistics, check_period
 from worktime.domain.workday import DayOverride, Workday, evaluate_workdays
 from worktime.infrastructure.database import Database
@@ -150,6 +150,8 @@ class ClockService:
         start: datetime | None = None,
         end: datetime | None = None,
     ) -> list[ClockEvent]:
+        if start is not None and end is not None and start > end:
+            raise RuleViolationError("The event period must not end before it starts.")
         with self._database.read() as db:
             _require_employee(db, employee_id)
             return _events(db, employee_id, start=start, end=end)

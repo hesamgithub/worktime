@@ -42,6 +42,21 @@ def test_a_setting_can_be_changed_through_the_environment(
             "finite number",
             id="a repeat window that is not a number",
         ),
+        pytest.param(
+            {"WORKTIME_REPEAT_WINDOW_MINUTES": "1e300"},
+            "too large",
+            id="a repeat window that overflows",
+        ),
+        pytest.param(
+            {"WORKTIME_WORKING_HOURS_START": "06:00:30"},
+            "whole minutes",
+            id="working hours with seconds",
+        ),
+        pytest.param(
+            {"WORKTIME_WORKING_HOURS_START": "06:00:00+01:00"},
+            "local times",
+            id="working hours with an offset",
+        ),
     ],
 )
 def test_an_invalid_value_stops_the_application_from_starting(

@@ -15,6 +15,8 @@ _NO_TIME = timedelta(0)
 
 def check_period(first_day: date, last_day: date) -> None:
     """A period to report on runs from a first to a last day, both included."""
+    if first_day.year < 2 or last_day.year >= 9999:
+        raise RuleViolationError("Report dates must fall between years 2 and 9998.")
     if first_day > last_day:
         raise RuleViolationError("The period must not end before it starts.")
     if (last_day - first_day).days >= MAX_PERIOD_DAYS:

@@ -181,6 +181,11 @@ See [What is tested, and why](#what-is-tested-and-why).
 All durations are whole minutes. All timestamps are UTC in responses and
 must carry a time zone offset in requests.
 
+Clock-based durations are calculated to the second. Each duration in a
+response is then truncated to whole minutes; totals are calculated before
+that truncation, so they can differ from the sum of the displayed day or
+session values. Override session times must be supplied in whole minutes.
+
 ### Working-time CRUD
 
 The challenge's working-time CRUD requirement is implemented through
@@ -228,6 +233,9 @@ curl 'localhost:8000/statistics?from=2026-03-02&to=2026-03-08'
 Errors are returned as `{"detail": "..."}` with status 404 (not found),
 409 (conflict, such as an email already in use or clocking outside working
 hours) or 422 (a rule was broken, such as overlapping sessions).
+Request-validation errors use a list of error objects in `detail` instead
+of a string. A busy database returns 503 with a `Retry-After` header.
+Report periods are limited to 366 days and dates in years 2 through 9998.
 
 ## How hours are evaluated
 
@@ -270,7 +278,9 @@ steps. Nothing derived is stored.
    | `in_progress` | The employee is clocked in | No |
 
 4. **Overtime and shortfall** are the time worked above or below the
-   employee's standard daily time.
+   employee's standard daily time. A day with zero worked time has neither
+   overtime nor shortfall; without a working-day calendar, the system cannot
+   determine whether work was expected on that day.
 
 Because working hours lie within one day, a session never crosses midnight
 and every day stands on its own.
@@ -447,10 +457,6 @@ which the end-to-end stories exercise anyway.
   workforce and would need batching for thousands.
 - **Changing the working hours does not rewrite the past.** Events recorded
   under wider hours stay as they are and keep counting.
-- **Busy database and extreme dates are not handled specially.** A write
-  that waits longer than the busy timeout for another write, or a report
-  period reaching the year 9999, ends in a server error rather than a
-  tailored response. Neither happens in normal use.
 
 ## AI assistance
 

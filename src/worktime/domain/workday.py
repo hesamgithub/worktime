@@ -80,6 +80,14 @@ class DayOverride(Base):
                 f"{day} is not over yet. Only past days can be overridden."
             )
 
+        sessions = tuple(sessions)
+        if any(
+            moment.second or moment.microsecond
+            for session in sessions
+            for moment in (session.start, session.end)
+        ):
+            raise RuleViolationError("Override session times must be whole minutes.")
+
         opens, closes = working_hours_on(day, time_zone)
         ordered = sorted(
             (Session(to_the_minute(s.start), to_the_minute(s.end)) for s in sessions),

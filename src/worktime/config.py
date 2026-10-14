@@ -45,6 +45,22 @@ class Settings(BaseSettings):
     def repeat_window(self) -> timedelta:
         return timedelta(minutes=self.repeat_window_minutes)
 
+    @field_validator("repeat_window_minutes")
+    @classmethod
+    def _representable_repeat_window(cls, value: float) -> float:
+        try:
+            timedelta(minutes=value)
+        except OverflowError:
+            raise ValueError("repeat window is too large") from None
+        return value
+
+    @field_validator("working_hours_start", "working_hours_end")
+    @classmethod
+    def _local_whole_minute(cls, value: time) -> time:
+        if value.tzinfo is not None or value.second or value.microsecond:
+            raise ValueError("working hours must be local times in whole minutes")
+        return value
+
     @field_validator("default_time_zone")
     @classmethod
     def _known_time_zone(cls, name: str) -> str:

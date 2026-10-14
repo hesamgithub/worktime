@@ -2,9 +2,12 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import logging
+import sqlite3
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from worktime import __version__
 from worktime.config import settings
@@ -45,8 +48,10 @@ def create_app(
         app.state.clock = ClockService(database, clock)
         app.state.overrides = OverrideService(database, clock)
         app.state.reports = ReportService(database, clock)
-        yield
-        database.dispose()
+        try:
+            yield
+        finally:
+            database.dispose()
 
     app = FastAPI(
         title="worktime",
@@ -55,6 +60,25 @@ def create_app(
         lifespan=lifespan,
     )
     app.include_router(router)
+
+    @app.exception_handler(OperationalError)
+    async def handle_database_error(
+        _request: Request, error: OperationalError
+    ) -> JSONResponse:
+        code = getattr(error.orig, "sqlite_errorcode", None)
+        if code is not None and code & 0xFF in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={"detail": "Database is busy. Please try again."},
+                headers={"Retry-After": "1"},
+            )
+        logging.getLogger(__name__).error(
+            "Database operation failed", exc_info=error
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Database operation failed."},
+        )
 
     @app.exception_handler(DomainError)
     async def handle_domain_error(

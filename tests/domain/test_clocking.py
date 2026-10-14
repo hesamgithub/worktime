@@ -12,6 +12,8 @@ import pytest
 
 from tests.support import VIENNA, at, session
 from worktime.domain.clocking import ClockEvent, ClockEventType, Pairing, pair_events
+from worktime.config import Settings
+import worktime.domain.clocking as clocking
 
 # Working hours are 06:00 to 20:00, and an action repeated within a minute
 # is ignored; see worktime/config.py.
@@ -161,3 +163,14 @@ def test_the_same_day_is_judged_in_the_employees_time_zone() -> None:
 
     assert len(found.sessions) == 1
     assert found.unpaired == ()
+
+
+def test_repeat_window_never_discards_another_days_entry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(clocking, "settings", Settings(repeat_window_minutes=1440))
+    found = pair(
+        events("IN Mon 08:00", "IN Tue 08:00", "OUT Tue 16:00"), now="Sat 12:00"
+    )
+    assert list(found.sessions) == [session("Tue 08:00 - Tue 16:00")]
+    assert described(found) == expected("IN Mon 08:00")

@@ -106,7 +106,7 @@ def pair_events(
     unpaired: list[ClockEvent] = []
     pending_in: ClockEvent | None = None
 
-    for event in _without_repeats(events):
+    for event in _without_repeats(events, time_zone=time_zone):
         if event.type == ClockEventType.IN:
             if pending_in is not None:
                 unpaired.append(pending_in)
@@ -132,7 +132,9 @@ def pair_events(
     return Pairing(tuple(sessions), tuple(unpaired), open_since)
 
 
-def _without_repeats(events: Iterable[ClockEvent]) -> list[ClockEvent]:
+def _without_repeats(
+    events: Iterable[ClockEvent], *, time_zone: ZoneInfo
+) -> list[ClockEvent]:
     """Order the events by time and drop repeats of the same action.
 
     A repeat is measured against the event just before it, so a burst of
@@ -144,6 +146,8 @@ def _without_repeats(events: Iterable[ClockEvent]) -> list[ClockEvent]:
         is_repeat = (
             previous is not None
             and event.type == previous.type
+            and event.occurred_at.astimezone(time_zone).date()
+            == previous.occurred_at.astimezone(time_zone).date()
             and event.occurred_at - previous.occurred_at <= settings.repeat_window
         )
         if not is_repeat:
