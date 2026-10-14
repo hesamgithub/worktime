@@ -74,6 +74,22 @@ totalling 7 hours. They submit an override declaring 08:30–12:00 and
 the original clock events remain untouched. Removing the override restores
 the original events as the basis for calculation.
 
+### Consider a few everyday mistakes
+
+- **An employee selects OUT when arriving.** The mistake is an incorrect event,
+  not simply missing information.
+- **An employee clocks in twice.** Both events are preserved; evaluation sets
+  aside a repeat or flags an unmatched entry.
+- **An employee forgets to clock out and clocks in again tomorrow.** Yesterday
+  remains incomplete, while tomorrow is evaluated independently.
+- **An employee records a valid IN–OUT pair but forgets a break.** The events
+  pair correctly, yet overstate the hours worked.
+
+These cases explain the separation: recording preserves what happened at the
+terminal, evaluation identifies what can be inferred, and a full-day override
+declares the hours that should count—even when the original events appear
+complete.
+
 ### Why entire days?
 
 Changes to hours naturally happen in the context of a full day: an employee
