@@ -1,0 +1,15 @@
+name: worktime
+
+services:
+  api:
+    build: .
+    image: worktime
+    ports:
+      - "${WORKTIME_PORT:-8000}:8000"
+    volumes:
+      - worktime-data:/data
+    restart: unless-stopped
+
+volumes:
+  worktime-data:
+    name: worktime-data

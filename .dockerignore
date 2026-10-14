@@ -1,0 +1,13 @@
+.git
+.venv
+.idea
+tests
+**/__pycache__
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.db
+*.db-shm
+*.db-wal
+.env
